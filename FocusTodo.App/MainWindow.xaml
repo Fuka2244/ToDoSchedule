@@ -1,0 +1,368 @@
+<Window x:Class="FocusTodo.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:FocusTodo.App.ViewModels"
+        Title="FocusTodo"
+        Width="1240"
+        Height="760"
+        MinWidth="960"
+        MinHeight="620"
+        WindowStartupLocation="CenterScreen"
+        Background="#EEF2F7">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <SolidColorBrush x:Key="Ink" Color="#172033" />
+        <SolidColorBrush x:Key="Muted" Color="#687386" />
+        <SolidColorBrush x:Key="Line" Color="#DDE4EE" />
+        <SolidColorBrush x:Key="Panel" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="Accent" Color="#2F6FED" />
+
+        <Style x:Key="PanelBorder" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource Panel}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Line}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Padding" Value="12,7" />
+            <Setter Property="Margin" Value="4,0" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Background" Value="{StaticResource Accent}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style x:Key="GhostButton" TargetType="Button">
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="Margin" Value="4,0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#CCD5E2" />
+            <Setter Property="Background" Value="#F8FAFD" />
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="9,7" />
+            <Setter Property="BorderBrush" Value="#C9D3E2" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Padding" Value="8,5" />
+            <Setter Property="BorderBrush" Value="#C9D3E2" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="#FFFFFF" />
+        </Style>
+
+        <Style x:Key="TaskTitleText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                    <Setter Property="TextDecorations" Value="Strikethrough" />
+                    <Setter Property="Foreground" Value="#9099A8" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="TaskMetaText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Muted}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                    <Setter Property="TextDecorations" Value="Strikethrough" />
+                    <Setter Property="Foreground" Value="#A6AFBD" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="NavListBox" TargetType="ListBox">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="#E8EDF5" />
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+
+        <Style TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="9,7" />
+            <Setter Property="Margin" Value="0,2" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <DataTemplate x:Key="TodoRowTemplate" DataType="{x:Type vm:TodoItemViewModel}">
+            <Border Margin="0,5" Padding="12" Background="#FFFFFF" BorderBrush="#E1E7F0" BorderThickness="1" CornerRadius="8">
+                <Border.Style>
+                    <Style TargetType="Border" BasedOn="{StaticResource PanelBorder}">
+                        <Setter Property="Opacity" Value="1" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                <Setter Property="Opacity" Value="0.68" />
+                                <Setter Property="Background" Value="#F6F8FB" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="150" />
+                        <ColumnDefinition Width="90" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <CheckBox Grid.Column="0"
+                              Margin="0,0,10,0"
+                              VerticalAlignment="Center"
+                              IsChecked="{Binding IsCompleted, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              Command="{Binding DataContext.ToggleCompletedCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                              CommandParameter="{Binding}" />
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="{Binding Title}" Style="{StaticResource TaskTitleText}" />
+                        <TextBlock Text="{Binding Description}" Style="{StaticResource TaskMetaText}" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Text="{Binding CountdownText}" VerticalAlignment="Center" Foreground="#364153" />
+                    <TextBlock Grid.Column="3" Text="{Binding PriorityText}" VerticalAlignment="Center" Foreground="#526071" />
+                    <Button Grid.Column="4"
+                            Content="{Binding DataContext.EditText, RelativeSource={RelativeSource AncestorType=Window}}"
+                            Style="{StaticResource GhostButton}"
+                            Command="{Binding DataContext.SelectTodoCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                            CommandParameter="{Binding}" />
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="210" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" Background="#152037" Padding="18">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Top" Margin="0,0,0,22">
+                    <TextBlock Text="FocusTodo" Foreground="#FFFFFF" FontSize="25" FontWeight="Bold" />
+                    <TextBlock Text="Plan. Focus. Finish." Foreground="#AAB7CA" Margin="2,4,0,0" />
+                </StackPanel>
+                <Button DockPanel.Dock="Bottom"
+                        Content="{Binding SettingsText}"
+                        Margin="0,18,0,0"
+                        Padding="10,7"
+                        Command="{Binding OpenSettingsCommand}" />
+                <ListBox ItemsSource="{Binding FilterOptions}"
+                         SelectedItem="{Binding SelectedFilter}"
+                         Style="{StaticResource NavListBox}" />
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Column="1" Margin="18">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Padding="14" Style="{StaticResource PanelBorder}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <DockPanel Grid.Row="0" Grid.Column="0" LastChildFill="True">
+                        <TextBlock Text="{Binding NewTodoTitleText}" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                        <TextBox x:Name="NewTodoTitleBox"
+                                 MinWidth="360"
+                                 Text="{Binding NewTodoTitle, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="{Binding NewTodoTitleText}" />
+                    </DockPanel>
+                    <Button Grid.Row="0"
+                            Grid.Column="1"
+                            Content="{Binding AddBigTodoText}"
+                            Style="{StaticResource PrimaryButton}"
+                            PreviewMouseLeftButtonDown="CommitTextInputsBeforeCommand"
+                            Click="AddRootTodoButton_Click" />
+                    <Button Grid.Row="0"
+                            Grid.Column="2"
+                            Content="{Binding AddSmallTodoText}"
+                            Style="{StaticResource GhostButton}"
+                            PreviewMouseLeftButtonDown="CommitTextInputsBeforeCommand"
+                            Click="AddChildTodoButton_Click" />
+
+                    <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="0,12,0,0">
+                        <TextBlock Text="{Binding PriorityText}" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                        <ComboBox Width="130" ItemsSource="{Binding Priorities}" SelectedItem="{Binding SelectedPriority}" />
+                        <TextBlock Text="{Binding DdlText}" Margin="16,0,8,0" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                        <DatePicker Width="150" SelectedDate="{Binding SelectedDueDate, Mode=TwoWay}" ToolTip="{Binding DdlDateText}" />
+                        <ComboBox Width="70" Margin="8,0,0,0" ItemsSource="{Binding Hours}" SelectedItem="{Binding SelectedDueHour}" ToolTip="{Binding DdlTimeText}" />
+                        <TextBlock Text=":" Margin="8,0" VerticalAlignment="Center" />
+                        <ComboBox Width="70" ItemsSource="{Binding Minutes}" SelectedItem="{Binding SelectedDueMinute}" ToolTip="{Binding DdlTimeText}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <DockPanel Grid.Row="1" Margin="0,14,0,0">
+                <TextBox DockPanel.Dock="Top" Margin="0,0,0,10" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" ToolTip="{Binding SearchByTitleText}" />
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Todos}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:TodoItemViewModel}">
+                                <StackPanel>
+                                    <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource TodoRowTemplate}" />
+                                    <ItemsControl ItemsSource="{Binding Children}" Margin="28,0,0,0" ItemTemplate="{StaticResource TodoRowTemplate}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+
+            <TextBlock Grid.Row="2" Text="{Binding StatusMessage}" Foreground="{StaticResource Muted}" Margin="0,10,0,0" />
+        </Grid>
+
+        <Border Grid.Column="2"
+                Width="352"
+                Margin="0,18,18,18"
+                Padding="16"
+                Style="{StaticResource PanelBorder}"
+                Visibility="{Binding IsDetailVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding TaskDetailText}" FontSize="22" FontWeight="Bold" Foreground="{StaticResource Ink}" />
+                    <Button Grid.Column="1" Content="x" Width="28" Height="26" Padding="0" Command="{Binding CloseDetailCommand}" />
+                </Grid>
+                <TextBlock Grid.Row="1" Margin="0,6,0,10" Text="{Binding SelectedTodo.CountdownText}" Foreground="{StaticResource Muted}" />
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+                    <StackPanel>
+                        <TextBlock Text="{Binding TitleText}" Foreground="{StaticResource Muted}" />
+                        <TextBox Margin="0,4,0,10" Text="{Binding SelectedTodo.Title, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Text="{Binding DescriptionText}" Foreground="{StaticResource Muted}" />
+                        <TextBox Margin="0,4,0,10" MinHeight="82" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Text="{Binding SelectedTodo.Description, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Text="{Binding DdlDateText}" Foreground="{StaticResource Muted}" />
+                        <DatePicker Margin="0,4,0,8" SelectedDate="{Binding SelectedDueDate, Mode=TwoWay}" />
+                        <TextBlock Text="{Binding DdlTimeText}" Foreground="{StaticResource Muted}" />
+                        <DockPanel Margin="0,4,0,8">
+                            <ComboBox Width="76" ItemsSource="{Binding Hours}" SelectedItem="{Binding SelectedDueHour}" />
+                            <TextBlock Text=":" Margin="6,0" VerticalAlignment="Center" />
+                            <ComboBox Width="76" ItemsSource="{Binding Minutes}" SelectedItem="{Binding SelectedDueMinute}" />
+                            <Button Content="{Binding ClearText}" Margin="8,0,0,0" Padding="10,4" Style="{StaticResource GhostButton}" Command="{Binding ClearDueAtCommand}" />
+                        </DockPanel>
+                        <TextBlock Text="{Binding PriorityText}" Foreground="{StaticResource Muted}" />
+                        <ComboBox Margin="0,4,0,10" ItemsSource="{Binding Priorities}" SelectedItem="{Binding SelectedPriority}" />
+                        <TextBlock Text="{Binding RepeatText}" Foreground="{StaticResource Muted}" />
+                        <DockPanel Margin="0,4,0,10">
+                            <ComboBox Width="128" ItemsSource="{Binding RepeatTypes}" SelectedItem="{Binding SelectedRepeatType}" />
+                            <TextBlock Text="{Binding EveryText}" Margin="8,0" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                            <TextBox Width="54" Text="{Binding RepeatInterval, UpdateSourceTrigger=PropertyChanged}" />
+                        </DockPanel>
+                        <CheckBox Content="{Binding EnableReminderText}" Margin="0,0,0,8" IsChecked="{Binding ReminderEnabled}" />
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,5,0">
+                                <TextBlock Text="{Binding LeadText}" Foreground="{StaticResource Muted}" />
+                                <TextBox Text="{Binding ReminderLeadMinutes, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="5,0">
+                                <TextBlock Text="{Binding IntervalText}" Foreground="{StaticResource Muted}" />
+                                <TextBox Text="{Binding ReminderIntervalMinutes, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Margin="5,0,0,0">
+                                <TextBlock Text="{Binding CountText}" Foreground="{StaticResource Muted}" />
+                                <TextBox Text="{Binding ReminderMaxCount, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Text="{Binding SnoozeNextReminderText}" Foreground="{StaticResource Muted}" />
+                        <UniformGrid Columns="4" Margin="0,4,0,10">
+                            <Button Content="5m" Style="{StaticResource GhostButton}" Command="{Binding SnoozeSelectedCommand}" CommandParameter="5" />
+                            <Button Content="10m" Style="{StaticResource GhostButton}" Command="{Binding SnoozeSelectedCommand}" CommandParameter="10" />
+                            <Button Content="30m" Style="{StaticResource GhostButton}" Command="{Binding SnoozeSelectedCommand}" CommandParameter="30" />
+                            <Button Content="1h" Style="{StaticResource GhostButton}" Command="{Binding SnoozeSelectedCommand}" CommandParameter="60" />
+                        </UniformGrid>
+                        <TextBlock Text="{Binding SelectedTodo.DueText}" Foreground="{StaticResource Muted}" Margin="0,0,0,8" />
+                        <TextBlock Text="{Binding CloseToTrayHintText}" TextWrapping="Wrap" Foreground="{StaticResource Muted}" />
+                    </StackPanel>
+                </ScrollViewer>
+                <Button Grid.Row="3"
+                        Content="{Binding SaveText}"
+                        Margin="0,12,0,8"
+                        Height="36"
+                        Style="{StaticResource PrimaryButton}"
+                        PreviewMouseLeftButtonDown="CommitTextInputsBeforeCommand"
+                        Command="{Binding SaveSelectedCommand}" />
+                <Grid Grid.Row="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Content="{Binding PinWindowText}" Height="36" Margin="0,0,4,0" Style="{StaticResource GhostButton}" Command="{Binding PinSelectedCommand}" />
+                    <Button Grid.Column="1" Content="{Binding DeleteText}" Height="36" Margin="4,0,0,0" Style="{StaticResource GhostButton}" Command="{Binding DeleteSelectedCommand}" />
+                </Grid>
+            </Grid>
+        </Border>
+        <Border Grid.Column="2"
+                Width="352"
+                Margin="0,18,18,18"
+                Padding="16"
+                Style="{StaticResource PanelBorder}"
+                Visibility="{Binding IsSettingsVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding SettingsText}" FontSize="22" FontWeight="Bold" Foreground="{StaticResource Ink}" />
+                    <Button Grid.Column="1" Content="x" Width="28" Height="26" Padding="0" Command="{Binding CloseSettingsCommand}" />
+                </Grid>
+                <StackPanel Grid.Row="1" Margin="0,14,0,0">
+                    <TextBlock Text="{Binding DatabaseLocationText}" Foreground="{StaticResource Muted}" />
+                    <TextBox Margin="0,4,0,12" Text="{Binding StorageDirectory, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Text="{Binding LanguageText}" Foreground="{StaticResource Muted}" />
+                    <ComboBox Margin="0,4,0,12" ItemsSource="{Binding LanguageOptions}" SelectedItem="{Binding SelectedLanguage}" />
+                    <CheckBox Margin="0,4,0,12"
+                              Content="{Binding AutoCreateNextRecurringTodosText}"
+                              IsChecked="{Binding AutoCreateNextRecurringTodos}" />
+                    <TextBlock Text="{Binding CloseToTrayHintText}" TextWrapping="Wrap" Foreground="{StaticResource Muted}" />
+                </StackPanel>
+                <Button Grid.Row="2"
+                        Content="{Binding SaveText}"
+                        Height="36"
+                        Style="{StaticResource PrimaryButton}"
+                        Command="{Binding SaveSettingsCommand}" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,88 @@
+<Window x:Class="FocusTodo.App.PinnedTodoWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding Title}"
+        Width="330"
+        Height="430"
+        MinWidth="260"
+        MinHeight="260"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="CanResizeWithGrip"
+        Topmost="{Binding IsTopMost}"
+        Opacity="{Binding Opacity}">
+    <Border Background="#F9FAFC"
+            BorderBrush="#C9D1DC"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="12">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="14" ShadowDepth="2" Opacity="0.22" />
+        </Border.Effect>
+        <Border.ContextMenu>
+            <ContextMenu>
+                <MenuItem Header="{Binding UnpinText}" Command="{Binding UnpinCommand}" />
+            </ContextMenu>
+        </Border.ContextMenu>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" Foreground="#1B2533" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding CountdownText}" FontSize="12" Foreground="#526071" Margin="0,3,0,0" />
+                    <TextBlock Text="{Binding DueText}" FontSize="12" Foreground="#6A7280" />
+                </StackPanel>
+                <Button Grid.Column="1" Content="x" Width="26" Height="24" Padding="0" Click="CloseButton_Click" />
+            </Grid>
+
+            <Grid Grid.Row="1" Margin="0,10,0,8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <WrapPanel Grid.Row="0">
+                    <CheckBox Content="{Binding TopText}" IsChecked="{Binding IsTopMost}" Margin="0,0,10,6" />
+                    <CheckBox Content="{Binding LockText}" IsChecked="{Binding IsLocked}" Margin="0,0,10,6" />
+                    <CheckBox Content="{Binding ShowDoneText}" IsChecked="{Binding ShowCompleted}" Margin="0,0,0,6" />
+                </WrapPanel>
+                <DockPanel Grid.Row="1">
+                    <TextBlock Text="{Binding OpacityText}" VerticalAlignment="Center" Foreground="#526071" Margin="0,0,8,0" />
+                    <Slider Minimum="0.35" Maximum="1" TickFrequency="0.05" Value="{Binding Opacity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                </DockPanel>
+            </Grid>
+
+            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Children}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,0,0,6" Padding="8" Background="#FFFFFF" BorderBrush="#E3E7EF" BorderThickness="1" CornerRadius="6">
+                                <CheckBox IsChecked="{Binding IsCompleted, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          Command="{Binding DataContext.ToggleChildCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                          CommandParameter="{Binding}">
+                                    <TextBlock Text="{Binding Title}" TextWrapping="Wrap" />
+                                </CheckBox>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <DockPanel Grid.Row="3" Margin="0,10,0,0">
+                <Button DockPanel.Dock="Right" Content="{Binding AddText}" Padding="10,5" Command="{Binding AddChildCommand}" />
+                <TextBox Margin="0,0,8,0" Text="{Binding NewChildTitle, UpdateSourceTrigger=PropertyChanged}" ToolTip="{Binding NewSmallTodoText}" />
+            </DockPanel>
+        </Grid>
+    </Border>
+</Window>
