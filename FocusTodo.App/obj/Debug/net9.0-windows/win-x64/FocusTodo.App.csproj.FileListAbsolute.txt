@@ -54,3 +54,4 @@ F:\vibecoding\ToDoSchedule\.build-check\Solution\FocusTodo.App.dll
 F:\vibecoding\ToDoSchedule\.build-check\Solution\FocusTodo.App.pdb
 F:\vibecoding\ToDoSchedule\FocusTodo.App\obj\Debug\net9.0-windows\win-x64\PinnedTodoWindow.baml
 F:\vibecoding\ToDoSchedule\FocusTodo.App\obj\Debug\net9.0-windows\win-x64\PinnedTodoWindow.g.cs
+F:\vibecoding\ToDoSchedule\FocusTodo.App\obj\Debug\net9.0-windows\win-x64\FocusTodo.App.sourcelink.json

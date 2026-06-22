@@ -14,19 +14,32 @@ public sealed class TodoService(
         return repository.GetRootTodosAsync(cancellationToken);
     }
 
-    public async Task<TodoItem> CreateRootTodoAsync(string title, DateTime? dueAt, TodoPriority priority, CancellationToken cancellationToken = default)
+    public async Task<TodoItem> CreateRootTodoAsync(
+        string title,
+        DateTime? dueAt,
+        TodoPriority priority,
+        RepeatType repeatType = RepeatType.None,
+        int repeatInterval = 1,
+        CancellationToken cancellationToken = default)
     {
-        var item = NewTodo(null, title, dueAt, priority);
+        var item = NewTodo(null, title, dueAt, priority, repeatType, repeatInterval);
         item.SortOrder = await repository.GetNextSortOrderAsync(null, cancellationToken);
         await repository.AddAsync(item, cancellationToken);
         await repository.SaveChangesAsync(cancellationToken);
         return item;
     }
 
-    public async Task<TodoItem> CreateChildTodoAsync(Guid parentId, string title, DateTime? dueAt, TodoPriority priority, CancellationToken cancellationToken = default)
+    public async Task<TodoItem> CreateChildTodoAsync(
+        Guid parentId,
+        string title,
+        DateTime? dueAt,
+        TodoPriority priority,
+        RepeatType repeatType = RepeatType.None,
+        int repeatInterval = 1,
+        CancellationToken cancellationToken = default)
     {
         var parent = await repository.GetByIdAsync(parentId, cancellationToken) ?? throw new InvalidOperationException("Parent todo was not found.");
-        var item = NewTodo(parent.Id, title, dueAt, priority);
+        var item = NewTodo(parent.Id, title, dueAt, priority, repeatType, repeatInterval);
         item.SortOrder = await repository.GetNextSortOrderAsync(parent.Id, cancellationToken);
         parent.Children.Add(item);
         await repository.AddAsync(item, cancellationToken);
@@ -130,11 +143,9 @@ public sealed class TodoService(
             return;
         }
 
-        var next = NewTodo(null, completedItem.Title, nextDueAt, completedItem.Priority);
+        var next = NewTodo(null, completedItem.Title, nextDueAt, completedItem.Priority, completedItem.RepeatType, completedItem.RepeatInterval);
         next.Description = completedItem.Description;
         next.SortOrder = await repository.GetNextSortOrderAsync(null, cancellationToken);
-        next.RepeatType = completedItem.RepeatType;
-        next.RepeatInterval = completedItem.RepeatInterval;
         next.RepeatDays = completedItem.RepeatDays;
         next.ReminderEnabled = completedItem.ReminderEnabled;
         next.ReminderLeadMinutes = completedItem.ReminderLeadMinutes;
@@ -183,7 +194,13 @@ public sealed class TodoService(
         }
     }
 
-    private static TodoItem NewTodo(Guid? parentId, string title, DateTime? dueAt, TodoPriority priority)
+    private static TodoItem NewTodo(
+        Guid? parentId,
+        string title,
+        DateTime? dueAt,
+        TodoPriority priority,
+        RepeatType repeatType = RepeatType.None,
+        int repeatInterval = 1)
     {
         var item = new TodoItem
         {
@@ -191,9 +208,18 @@ public sealed class TodoService(
             Title = NormalizeTitle(title),
             DueAt = dueAt,
             Priority = priority,
+            RepeatType = dueAt is null ? RepeatType.None : repeatType,
+            RepeatInterval = Math.Max(1, repeatInterval),
             CreatedAt = DateTime.Now,
             UpdatedAt = DateTime.Now
         };
+        if (item.RepeatType != RepeatType.None)
+        {
+            item.ReminderEnabled = true;
+            item.ReminderLeadMinutes = 0;
+            item.ReminderMaxCount = 1;
+        }
+
         ResetReminderSchedule(item);
         return item;
     }

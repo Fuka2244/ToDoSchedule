@@ -175,6 +175,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -202,7 +203,14 @@
                             PreviewMouseLeftButtonDown="CommitTextInputsBeforeCommand"
                             Click="AddChildTodoButton_Click" />
 
-                    <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="0,12,0,0">
+                    <WrapPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,12,0,0">
+                        <TextBlock Text="{Binding RepeatText}" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                        <ComboBox Width="128" ItemsSource="{Binding RepeatTypes}" SelectedItem="{Binding SelectedRepeatType}" />
+                        <TextBlock Text="{Binding EveryText}" Margin="12,0,8,0" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                        <TextBox Width="54" Text="{Binding RepeatInterval, UpdateSourceTrigger=PropertyChanged}" />
+                    </WrapPanel>
+
+                    <WrapPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,12,0,0">
                         <TextBlock Text="{Binding PriorityText}" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
                         <ComboBox Width="130" ItemsSource="{Binding Priorities}" SelectedItem="{Binding SelectedPriority}" />
                         <TextBlock Text="{Binding DdlText}" Margin="16,0,8,0" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
@@ -210,7 +218,7 @@
                         <ComboBox Width="70" Margin="8,0,0,0" ItemsSource="{Binding Hours}" SelectedItem="{Binding SelectedDueHour}" ToolTip="{Binding DdlTimeText}" />
                         <TextBlock Text=":" Margin="8,0" VerticalAlignment="Center" />
                         <ComboBox Width="70" ItemsSource="{Binding Minutes}" SelectedItem="{Binding SelectedDueMinute}" ToolTip="{Binding DdlTimeText}" />
-                    </StackPanel>
+                    </WrapPanel>
                 </Grid>
             </Border>
 

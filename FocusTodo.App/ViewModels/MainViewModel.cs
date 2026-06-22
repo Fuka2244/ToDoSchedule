@@ -178,6 +178,18 @@ public sealed partial class MainViewModel : ObservableObject
         ApplyFilters();
     }
 
+    partial void OnSelectedRepeatTypeChanged(RepeatType value)
+    {
+        if (value == RepeatType.None || ReminderEnabled)
+        {
+            return;
+        }
+
+        ReminderEnabled = true;
+        ReminderLeadMinutes = 0;
+        ReminderMaxCount = 1;
+    }
+
     partial void OnSelectedTodoChanged(TodoItemViewModel? value)
     {
         OnPropertyChanged(nameof(IsDetailVisible));
@@ -295,7 +307,12 @@ public sealed partial class MainViewModel : ObservableObject
         {
             var normalizedTitle = NormalizeNewTitle(title);
             _loggingService.LogInfo($"Add big todo requested. Title length: {normalizedTitle.Length}.");
-            await _todoService.CreateRootTodoAsync(normalizedTitle, BuildDueAt(), SelectedPriority);
+            await _todoService.CreateRootTodoAsync(
+                normalizedTitle,
+                BuildDueAt(),
+                SelectedPriority,
+                SelectedRepeatType,
+                RepeatInterval);
             NewTodoTitle = string.Empty;
             StatusMessage = T("AddBigTodo");
         });
@@ -319,7 +336,13 @@ public sealed partial class MainViewModel : ObservableObject
         {
             var normalizedTitle = string.IsNullOrWhiteSpace(title) ? T("NewSmallTodo") : title.Trim();
             _loggingService.LogInfo($"Add small todo requested. Title length: {normalizedTitle.Length}.");
-            await _todoService.CreateChildTodoAsync(parent.Id, normalizedTitle, BuildDueAt(), SelectedPriority);
+            await _todoService.CreateChildTodoAsync(
+                parent.Id,
+                normalizedTitle,
+                BuildDueAt(),
+                SelectedPriority,
+                SelectedRepeatType,
+                RepeatInterval);
             NewTodoTitle = string.Empty;
             StatusMessage = T("AddSmallTodo");
         });
@@ -343,7 +366,7 @@ public sealed partial class MainViewModel : ObservableObject
                 SelectedPriority,
                 SelectedRepeatType,
                 RepeatInterval,
-                ReminderEnabled,
+                ReminderEnabled || SelectedRepeatType != RepeatType.None,
                 ReminderLeadMinutes,
                 ReminderIntervalMinutes,
                 ReminderMaxCount);
@@ -459,7 +482,15 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (SelectedDueDate is null)
         {
-            return null;
+            if (SelectedRepeatType == RepeatType.None)
+            {
+                return null;
+            }
+
+            var next = DateTime.Today
+                .AddHours(Math.Clamp(SelectedDueHour, 0, 23))
+                .AddMinutes(Math.Clamp(SelectedDueMinute, 0, 59));
+            return next > DateTime.Now ? next : next.AddDays(1);
         }
 
         return SelectedDueDate.Value.Date

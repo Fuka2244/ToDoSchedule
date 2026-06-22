@@ -25,6 +25,22 @@ public sealed class TodoServiceTests
     }
 
     [Fact]
+    public async Task CreateRootTodo_PersistsRecurrence()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        var dueAt = new DateTime(2026, 6, 22, 18, 0, 0);
+
+        var todo = await fixture.Service.CreateRootTodoAsync("Daily ddl", dueAt, TodoPriority.High, RepeatType.Daily, 1);
+
+        var saved = await fixture.Context.TodoItems.AsNoTracking().SingleAsync(x => x.Id == todo.Id);
+        Assert.Equal(RepeatType.Daily, saved.RepeatType);
+        Assert.Equal(1, saved.RepeatInterval);
+        Assert.True(saved.ReminderEnabled);
+        Assert.Equal(0, saved.ReminderLeadMinutes);
+        Assert.Equal(1, saved.ReminderMaxCount);
+    }
+
+    [Fact]
     public async Task CreateChildTodo_PersistsUnderParent()
     {
         await using var fixture = await TestFixture.CreateAsync();
@@ -166,6 +182,29 @@ public sealed class TodoServiceTests
         Assert.NotNull(saved.LastReminderAt);
         Assert.NotNull(saved.NextReminderAt);
         Assert.True(saved.NextReminderAt > DateTime.Now);
+    }
+
+    [Fact]
+    public async Task ReminderService_RecurringReminderAdvancesToNextOccurrence()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        var dueAt = DateTime.Now.AddMinutes(-1);
+        var todo = await fixture.Service.CreateRootTodoAsync("Daily reminder", dueAt, TodoPriority.High, RepeatType.Daily, 1);
+        var notifications = new RecordingNotificationService();
+        var reminderService = new ReminderService(
+            fixture.ServiceProvider.GetRequiredService<IServiceScopeFactory>(),
+            notifications,
+            new CountdownService(),
+            new TestLoggingService(),
+            new RecurrenceService());
+
+        await reminderService.CheckNowAsync();
+
+        Assert.Single(notifications.Messages);
+        var saved = await fixture.Context.TodoItems.AsNoTracking().SingleAsync(x => x.Id == todo.Id);
+        Assert.Equal(dueAt.AddDays(1), saved.DueAt);
+        Assert.Equal(saved.DueAt, saved.NextReminderAt);
+        Assert.Equal(0, saved.ReminderSentCount);
     }
 
     [Fact]

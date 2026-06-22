@@ -16,6 +16,7 @@ public sealed class ReminderService(
     INotificationService notificationService,
     ICountdownService countdownService,
     ILoggingService loggingService,
+    IRecurrenceService? recurrenceService = null,
     ILocalizationService? localizationService = null) : IReminderService
 {
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(5) };
@@ -85,12 +86,20 @@ public sealed class ReminderService(
                 await notificationService.ShowAsync(T("ReminderTitle"), body);
                 loggingService.LogInfo($"Reminder sent. TodoId={item.Id}, Title={item.Title}, Count={nextCount}/{item.ReminderMaxCount}.");
 
-                item.ReminderSentCount = nextCount;
-                item.LastReminderAt = now;
-                item.SnoozedUntil = null;
-                item.NextReminderAt = nextCount >= item.ReminderMaxCount
-                    ? null
-                    : now.AddMinutes(Math.Max(1, item.ReminderIntervalMinutes));
+                if (item.RepeatType != RepeatType.None && nextCount >= item.ReminderMaxCount)
+                {
+                    AdvanceRecurringReminder(item, now);
+                }
+                else
+                {
+                    item.ReminderSentCount = nextCount;
+                    item.LastReminderAt = now;
+                    item.SnoozedUntil = null;
+                    item.NextReminderAt = nextCount >= item.ReminderMaxCount
+                        ? null
+                        : now.AddMinutes(Math.Max(1, item.ReminderIntervalMinutes));
+                }
+
                 item.UpdatedAt = now;
             }
 
@@ -107,6 +116,36 @@ public sealed class ReminderService(
         {
             _isChecking = false;
         }
+    }
+
+    private void AdvanceRecurringReminder(TodoItem item, DateTime now)
+    {
+        var nextDueAt = GetNextFutureOccurrence(item.DueAt, item.RepeatType, item.RepeatInterval, now);
+        item.ReminderSentCount = 0;
+        item.LastReminderAt = now;
+        item.SnoozedUntil = null;
+
+        if (nextDueAt is null)
+        {
+            item.NextReminderAt = null;
+            return;
+        }
+
+        item.DueAt = nextDueAt;
+        item.NextReminderAt = nextDueAt.Value.AddMinutes(-Math.Max(0, item.ReminderLeadMinutes));
+        loggingService.LogInfo($"Recurring reminder advanced. TodoId={item.Id}, NextDueAt={item.DueAt:O}, NextReminderAt={item.NextReminderAt:O}.");
+    }
+
+    private DateTime? GetNextFutureOccurrence(DateTime? dueAt, RepeatType repeatType, int interval, DateTime now)
+    {
+        var service = recurrenceService ?? new RecurrenceService();
+        var next = service.GetNextOccurrence(dueAt, repeatType, interval);
+        for (var i = 0; i < 100 && next is not null && next.Value <= now; i++)
+        {
+            next = service.GetNextOccurrence(next, repeatType, interval);
+        }
+
+        return next;
     }
 
     private string T(string key)
